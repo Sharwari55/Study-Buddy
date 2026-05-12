@@ -1,0 +1,46 @@
+name: study_buddy
+description: Study Buddy - Kids Educational App with Gamified Rewards
+
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # UI & Animations
+  google_fonts: ^6.1.0
+  animated_text_kit: ^4.2.2
+  confetti: ^0.7.0
+  lottie: ^2.7.0
+  shimmer: ^3.0.0
+  flutter_animate: ^4.3.0
+
+  # State & Storage
+  shared_preferences: ^2.2.2
+  provider: ^6.1.1
+
+  # Video & YouTube
+  youtube_player_flutter: ^9.0.2
+  url_launcher: ^6.2.2
+
+  # Utils
+  flutter_rating_bar: ^4.0.1
+  percent_indicator: ^4.2.3
+  fl_chart: ^0.65.0
+  intl: ^0.19.0
+  uuid: ^4.2.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/images/
