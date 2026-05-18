@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:provider/provider.dart';
+import 'package:get/get.dart';
 import 'package:confetti/confetti.dart';
 import '../theme/app_theme.dart';
 import '../utils/app_state.dart';
@@ -17,7 +17,7 @@ class QuizScreen extends StatefulWidget {
 
 class _QuizScreenState extends State<QuizScreen>
     with SingleTickerProviderStateMixin {
-  late List<QuizQuestion> _questions;
+  List<QuizQuestion>? _questions;
   int _currentIndex = 0;
   int _score = 0;
   int? _selectedOption;
@@ -38,11 +38,19 @@ class _QuizScreenState extends State<QuizScreen>
     _loadQuestions();
   }
 
-  void _loadQuestions() {
-    final user = context.read<AppState>().currentUser;
+  void _loadQuestions() async {
+    final state = AppController.to;
+    final user = state.currentUser;
     final ageGroup = user?.ageGroup ?? '5-8';
-    _questions = QuizData.getForAge(ageGroup).take(10).toList();
-    _progressController.forward(from: 0);
+    
+    final allQuestions = await state.dbService.getQuizzes(ageGroup);
+    
+    if (mounted) {
+      setState(() {
+        _questions = allQuestions.take(10).toList();
+      });
+      _progressController.forward(from: 0);
+    }
   }
 
   void _selectOption(int index) {
@@ -50,14 +58,14 @@ class _QuizScreenState extends State<QuizScreen>
     setState(() {
       _selectedOption = index;
       _answered = true;
-      if (index == _questions[_currentIndex].correctIndex) {
+      if (index == _questions![_currentIndex].correctIndex) {
         _score++;
       }
     });
     _progressController.stop();
 
     Future.delayed(const Duration(milliseconds: 1200), () {
-      if (_currentIndex < _questions.length - 1) {
+      if (_currentIndex < _questions!.length - 1) {
         setState(() {
           _currentIndex++;
           _selectedOption = null;
@@ -74,11 +82,10 @@ class _QuizScreenState extends State<QuizScreen>
     setState(() => _quizDone = true);
     _confettiController.play();
 
-    // Award tokens: 3 base + bonus for 5+ correct
-    int tokens = 3;
-    if (_score >= 5) tokens += 5;
-    if (_score >= 8) tokens += 5;
-    await context.read<AppState>().addTokens(tokens);
+    final tokens = (_score / _questions!.length * 10).floor() + 3; // Minimum 3 tokens for trying!
+    await AppController.to.addTokens(tokens);
+
+    if (!mounted) return;
   }
 
   void _restart() {
@@ -103,15 +110,16 @@ class _QuizScreenState extends State<QuizScreen>
   Widget build(BuildContext context) {
     if (_quizDone) return _ResultScreen(
       score: _score,
-      total: _questions.length,
+      total: _questions?.length ?? 0,
       onRestart: _restart,
       confettiController: _confettiController,
     );
 
-    if (_questions.isEmpty) return const Center(child: Text('No questions found!'));
+    if (_questions == null) return const Scaffold(body: Center(child: CircularProgressIndicator(color: AppTheme.watermelonRed)));
+    if (_questions!.isEmpty) return const Scaffold(body: Center(child: Text('No questions found! Seed the database first.')));
 
-    final question = _questions[_currentIndex];
-    final progress = (_currentIndex + 1) / _questions.length;
+    final question = _questions![_currentIndex];
+    final progress = (_currentIndex + 1) / _questions!.length;
 
     return Scaffold(
       body: Container(
@@ -125,7 +133,7 @@ class _QuizScreenState extends State<QuizScreen>
                 child: Row(
                   children: [
                     GestureDetector(
-                      onTap: () => Navigator.pop(context),
+                      onTap: () => Get.back(),
                       child: Container(
                         padding: const EdgeInsets.all(10),
                         decoration: BoxDecoration(
@@ -194,7 +202,7 @@ class _QuizScreenState extends State<QuizScreen>
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
-                          'Question ${_currentIndex + 1}/${_questions.length}',
+                          'Question ${_currentIndex + 1}/${_questions!.length}',
                           style: GoogleFonts.quicksand(
                             fontWeight: FontWeight.w600,
                             fontSize: 13,

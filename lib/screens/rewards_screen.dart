@@ -1,16 +1,42 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:provider/provider.dart';
+import 'package:get/get.dart';
 import '../theme/app_theme.dart';
 import '../utils/app_state.dart';
+import '../models/models.dart';
 import '../widgets/widgets.dart';
 
-class RewardsScreen extends StatelessWidget {
+class RewardsScreen extends StatefulWidget {
   const RewardsScreen({super.key});
 
   @override
+  State<RewardsScreen> createState() => _RewardsScreenState();
+}
+
+class _RewardsScreenState extends State<RewardsScreen> {
+  List<RewardModel> _rewards = [];
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadRewards();
+  }
+
+  Future<void> _loadRewards() async {
+    final state = AppController.to;
+    final rewards = await state.dbService.getRewards();
+    if (mounted) {
+      setState(() {
+        _rewards = rewards;
+        _isLoading = false;
+      });
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return Consumer<AppState>(builder: (_, state, __) {
+    return GetBuilder<AppController>(builder: (state) {
       final user = state.currentUser;
       if (user == null) return const SizedBox();
 
@@ -57,90 +83,31 @@ class RewardsScreen extends StatelessWidget {
                   ),
                 ),
                 Expanded(
-                  child: ListView(
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                    children: [
-                      _rewardSection(
-                        context: context,
-                        title: '🎮 Mini Games',
-                        items: [
-                          _RewardItem(
-                            emoji: '🧩',
-                            name: 'Puzzle World',
-                            description: 'Match shapes & colors',
-                            cost: 10,
-                            unlocked: user.tokens >= 10,
-                            onUnlock: () => _unlockReward(context, state, 10, 'Puzzle World'),
-                          ),
-                          _RewardItem(
-                            emoji: '🔢',
-                            name: 'Number Chase',
-                            description: 'Count & match numbers',
-                            cost: 15,
-                            unlocked: user.tokens >= 15,
-                            onUnlock: () => _unlockReward(context, state, 15, 'Number Chase'),
-                          ),
-                          _RewardItem(
-                            emoji: '🎨',
-                            name: 'Art Studio',
-                            description: 'Draw & color freely',
-                            cost: 20,
-                            unlocked: user.tokens >= 20,
-                            onUnlock: () => _unlockReward(context, state, 20, 'Art Studio'),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 20),
-                      _rewardSection(
-                        context: context,
-                        title: '🎬 Fun Cartoons',
-                        items: [
-                          _RewardItem(
-                            emoji: '🐘',
-                            name: 'Gajapati Kulapati',
-                            description: 'Classic Indian kids story',
-                            cost: 25,
-                            unlocked: user.tokens >= 25,
-                            onUnlock: () => _unlockReward(context, state, 25, 'Gajapati Kulapati'),
-                          ),
-                          _RewardItem(
-                            emoji: '🦁',
-                            name: 'Jungle Tales',
-                            description: 'Panchatantra stories',
-                            cost: 30,
-                            unlocked: user.tokens >= 30,
-                            onUnlock: () => _unlockReward(context, state, 30, 'Jungle Tales'),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 20),
-                      _rewardSection(
-                        context: context,
-                        title: '🏆 Special Badges',
-                        items: [
-                          _RewardItem(
-                            emoji: '🌟',
-                            name: 'Star Scholar',
-                            description: 'Show off your learning!',
-                            cost: 50,
-                            unlocked: user.tokens >= 50,
-                            onUnlock: () => _unlockReward(context, state, 50, 'Star Scholar'),
-                            isSpecial: true,
-                          ),
-                          _RewardItem(
-                            emoji: '🇮🇳',
-                            name: 'Bharat Champion',
-                            description: 'India\'s top learner badge',
-                            cost: 100,
-                            unlocked: user.tokens >= 100,
-                            onUnlock: () => _unlockReward(context, state, 100, 'Bharat Champion'),
-                            isSpecial: true,
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 20),
-                    ],
-                  ),
+                  child: _isLoading 
+                      ? const Center(child: CircularProgressIndicator(color: AppTheme.watermelonRed))
+                      : _rewards.isEmpty
+                          ? Center(
+                              child: Text(
+                                'No rewards found.\nMaybe the database needs to be seeded?',
+                                textAlign: TextAlign.center,
+                                style: GoogleFonts.quicksand(
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 16,
+                                  color: const Color(0xFF636E72),
+                                ),
+                              ),
+                            )
+                          : ListView(
+                              padding: const EdgeInsets.symmetric(horizontal: 20),
+                              children: [
+                                _buildCategorySection(context, state, '🎮 Mini Games', '🎮 Mini Games'),
+                                const SizedBox(height: 20),
+                                _buildCategorySection(context, state, '🎬 Fun Cartoons', '🎬 Fun Cartoons'),
+                                const SizedBox(height: 20),
+                                _buildCategorySection(context, state, '🏆 Special Badges', '🏆 Special Badges'),
+                                const SizedBox(height: 20),
+                              ],
+                            ),
                 ),
               ],
             ),
@@ -150,11 +117,10 @@ class RewardsScreen extends StatelessWidget {
     });
   }
 
-  Widget _rewardSection({
-    required BuildContext context,
-    required String title,
-    required List<_RewardItem> items,
-  }) {
+  Widget _buildCategorySection(BuildContext context, AppController state, String title, String category) {
+    final categoryRewards = _rewards.where((r) => r.category == category).toList();
+    if (categoryRewards.isEmpty) return const SizedBox();
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -167,18 +133,39 @@ class RewardsScreen extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 12),
-        ...items,
+        ...categoryRewards.map((reward) {
+          final isUnlocked = state.currentUser!.unlockedRewards.contains(reward.id);
+          return _RewardItem(
+            emoji: reward.emoji,
+            name: reward.name,
+            description: reward.description,
+            cost: reward.cost,
+            unlocked: isUnlocked,
+            onUnlock: () => _unlockReward(context, state, reward),
+            isSpecial: reward.isSpecial,
+          );
+        }),
       ],
     );
   }
 
-  void _unlockReward(
-      BuildContext context, AppState state, int cost, String name) {
-    if (state.currentUser!.tokens < cost) {
+  void _unlockReward(BuildContext context, AppController state, RewardModel reward) async {
+    if (state.currentUser!.unlockedRewards.contains(reward.id)) {
+      // Already unlocked, just use it
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Using ${reward.name}!', style: GoogleFonts.quicksand(fontWeight: FontWeight.w600)),
+          backgroundColor: AppTheme.mintGreen,
+        ),
+      );
+      return;
+    }
+
+    if (state.currentUser!.tokens < reward.cost) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            'Not enough tokens! Need $cost tokens.',
+            'Not enough tokens! Need ${reward.cost} tokens.',
             style: GoogleFonts.quicksand(fontWeight: FontWeight.w600),
           ),
           backgroundColor: AppTheme.watermelonRed,
@@ -186,8 +173,11 @@ class RewardsScreen extends StatelessWidget {
       );
       return;
     }
-    state.spendTokens(cost);
-    showDialog(
+
+    await state.unlockReward(reward.id, reward.cost);
+    
+    if (mounted) {
+      showDialog(
       context: context,
       builder: (_) => Dialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
@@ -208,7 +198,7 @@ class RewardsScreen extends StatelessWidget {
               ),
               const SizedBox(height: 8),
               Text(
-                '$name is now unlocked!\nEnjoy your reward! 🌟',
+                '${reward.name} is now unlocked!\nEnjoy your reward! 🌟',
                 textAlign: TextAlign.center,
                 style: GoogleFonts.quicksand(
                   fontWeight: FontWeight.w500,
@@ -227,6 +217,7 @@ class RewardsScreen extends StatelessWidget {
         ),
       ),
     );
+    }
   }
 }
 

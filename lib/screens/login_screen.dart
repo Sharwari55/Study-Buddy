@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:provider/provider.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:get/get.dart';
 import '../theme/app_theme.dart';
-import '../models/models.dart';
-import '../utils/app_state.dart';
+import '../services/auth_service.dart';
 import '../widgets/widgets.dart';
+import '../utils/app_state.dart';
+import '../models/models.dart';
+import 'signup_screen.dart';
 import 'home_screen.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -15,8 +18,51 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  int _step = 0; // 0=welcome, 1=parental gate, 2=profile setup
-  bool _parentalVerified = false;
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
+  final _authService = AuthService();
+  bool _isLoading = false;
+  bool _obscurePassword = true;
+
+  Future<void> _login() async {
+    if (_emailController.text.isEmpty || _passwordController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please enter email and password')),
+      );
+      return;
+    }
+
+    setState(() => _isLoading = true);
+    try {
+      await _authService.signInWithEmail(
+        _emailController.text.trim(),
+        _passwordController.text.trim(),
+      );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: ${e.toString()}')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _loginWithGoogle() async {
+    setState(() => _isLoading = true);
+    try {
+      await _authService.signInWithGoogle();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Google Sign-In Error: ${e.toString()}')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -24,24 +70,218 @@ class _LoginScreenState extends State<LoginScreen> {
       body: Container(
         decoration: const BoxDecoration(gradient: AppTheme.bgGradient),
         child: SafeArea(
-          child: AnimatedSwitcher(
-            duration: const Duration(milliseconds: 400),
-            child: _step == 0
-                ? _WelcomePage(onStart: () => setState(() => _step = 1))
-                : _step == 1
-                    ? _ParentalGatePage(
-                        onVerified: () => setState(() {
-                          _parentalVerified = true;
-                          _step = 2;
-                        }),
-                      )
-                    : const _ProfileSetupPage(),
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(28),
+            child: Column(
+              children: [
+                const SizedBox(height: 40),
+                // Header Logo
+                Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    Container(
+                      width: 140,
+                      height: 140,
+                      decoration: BoxDecoration(
+                        gradient: AppTheme.heroGradient,
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppTheme.peachOrange.withOpacity(0.3),
+                            blurRadius: 25,
+                            spreadRadius: 5,
+                          ),
+                        ],
+                      ),
+                    ),
+                    const Text('📚', style: TextStyle(fontSize: 64)),
+                  ],
+                ),
+                const SizedBox(height: 32),
+                Text(
+                  'Welcome Back! 👋',
+                  style: GoogleFonts.quicksand(
+                    fontWeight: FontWeight.w800,
+                    fontSize: 32,
+                    color: AppTheme.bgDark,
+                  ),
+                ),
+                Text(
+                  'Log in to continue your learning journey',
+                  style: GoogleFonts.quicksand(
+                    fontWeight: FontWeight.w500,
+                    fontSize: 16,
+                    color: const Color(0xFF636E72),
+                  ),
+                ),
+                const SizedBox(height: 40),
+
+                // Email Field
+                _buildTextField(
+                  controller: _emailController,
+                  hint: 'Email Address',
+                  icon: Icons.email_outlined,
+                  keyboardType: TextInputType.emailAddress,
+                ),
+                const SizedBox(height: 20),
+
+                // Password Field
+                _buildTextField(
+                  controller: _passwordController,
+                  hint: 'Password',
+                  icon: Icons.lock_outline,
+                  obscure: _obscurePassword,
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      _obscurePassword ? Icons.visibility_off : Icons.visibility,
+                      color: Colors.grey,
+                    ),
+                    onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                  ),
+                ),
+                
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: TextButton(
+                    onPressed: () {
+                      if (_emailController.text.isNotEmpty) {
+                        _authService.sendPasswordResetEmail(_emailController.text.trim());
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Password reset email sent!')),
+                        );
+                      } else {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Please enter your email first')),
+                        );
+                      }
+                    },
+                    child: Text(
+                      'Forgot Password?',
+                      style: GoogleFonts.quicksand(
+                        color: AppTheme.watermelonRed,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 20),
+
+                if (_isLoading)
+                  const CircularProgressIndicator(color: AppTheme.watermelonRed)
+                else
+                  Column(
+                    children: [
+                      GradientButton(
+                        label: 'Log In 🚀',
+                        onTap: _login,
+                        width: double.infinity,
+                        colors: [AppTheme.watermelonRed, AppTheme.peachOrange],
+                      ),
+                      const SizedBox(height: 20),
+                      Text(
+                        'OR',
+                        style: GoogleFonts.quicksand(
+                          fontWeight: FontWeight.w700,
+                          color: Colors.grey,
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      // Google Login Button
+                      SizedBox(
+                        width: double.infinity,
+                        child: OutlinedButton.icon(
+                          onPressed: _loginWithGoogle,
+                          icon: const FaIcon(FontAwesomeIcons.google, color: AppTheme.watermelonRed),
+                          label: Text(
+                            'Continue with Google',
+                            style: GoogleFonts.quicksand(
+                              fontWeight: FontWeight.w700,
+                              color: AppTheme.bgDark,
+                            ),
+                          ),
+                          style: OutlinedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            side: BorderSide(color: Colors.grey.shade300),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+
+                const SizedBox(height: 32),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      'Don\'t have an account? ',
+                      style: GoogleFonts.quicksand(color: const Color(0xFF636E72)),
+                    ),
+                    GestureDetector(
+                      onTap: () {
+                        Get.to(() => const SignupScreen());
+                      },
+                      child: Text(
+                        'Sign Up',
+                        style: GoogleFonts.quicksand(
+                          color: AppTheme.skyBlue,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
         ),
       ),
     );
   }
+
+  Widget _buildTextField({
+    required TextEditingController controller,
+    required String hint,
+    required IconData icon,
+    bool obscure = false,
+    TextInputType? keyboardType,
+    Widget? suffixIcon,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: TextField(
+        controller: controller,
+        obscureText: obscure,
+        keyboardType: keyboardType,
+        style: GoogleFonts.quicksand(fontWeight: FontWeight.w600),
+        decoration: InputDecoration(
+          hintText: hint,
+          prefixIcon: Icon(icon, color: AppTheme.watermelonRed),
+          suffixIcon: suffixIcon,
+          border: InputBorder.none,
+          contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        ),
+      ),
+    );
+  }
 }
+
+// I am keeping the original parts below but they will be ignored by the compiler 
+// since I am replacing the class. But to avoid issues with replace_file_content 
+// I will just replace the whole file if I can, but the tool rules say do not replace whole file.
+// So I will replace from line 1 to 582.
 
 // ===== STEP 0: WELCOME =====
 class _WelcomePage extends StatelessWidget {
@@ -343,16 +583,13 @@ class _ProfileSetupPageState extends State<_ProfileSetupPage> {
       return;
     }
     setState(() => _isCreating = true);
-    await context.read<AppState>().createProfile(
+    await AppController.to.createProfile(
           nickname: nickname,
           ageGroup: _selectedAgeGroup,
           avatarId: _selectedAvatar,
         );
     if (mounted) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => const HomeScreen()),
-      );
+      Get.off(() => const HomeScreen());
     }
   }
 

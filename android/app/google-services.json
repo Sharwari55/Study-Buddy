@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "794177788707",
+    "project_id": "sharvari-b960d",
+    "storage_bucket": "sharvari-b960d.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:794177788707:android:44bc73d7e4ee6002a9ca96",
+        "android_client_info": {
+          "package_name": "com.example.study_buddy_new"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCqZnzeNISPh2mIjoS97kr6U8mDV1A5rV0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:provider/provider.dart';
+import 'package:get/get.dart';
 import '../theme/app_theme.dart';
 import '../utils/app_state.dart';
 import '../widgets/widgets.dart';
@@ -23,7 +23,7 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<AppState>().updateStreak();
+      AppController.to.updateStreak();
     });
   }
 
@@ -84,37 +84,41 @@ class _BottomNav extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: items.asMap().entries.map((e) {
               final isSelected = e.key == selectedIndex;
-              return GestureDetector(
-                onTap: () => onTap(e.key),
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  decoration: BoxDecoration(
-                    gradient: isSelected
-                        ? const LinearGradient(
-                            colors: [AppTheme.watermelonRed, AppTheme.peachOrange],
-                          )
-                        : null,
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(e.value.$1,
-                          style: TextStyle(fontSize: isSelected ? 22 : 18)),
-                      const SizedBox(height: 2),
-                      Text(
-                        e.value.$2,
-                        style: GoogleFonts.quicksand(
-                          fontWeight: FontWeight.w600,
-                          fontSize: 11,
-                          color: isSelected
-                              ? Colors.white
-                              : const Color(0xFF636E72),
+              return Expanded(
+                child: GestureDetector(
+                  onTap: () => onTap(e.key),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                    margin: const EdgeInsets.symmetric(horizontal: 4),
+                    decoration: BoxDecoration(
+                      gradient: isSelected
+                          ? const LinearGradient(
+                              colors: [AppTheme.watermelonRed, AppTheme.peachOrange],
+                            )
+                          : null,
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(e.value.$1,
+                            style: TextStyle(fontSize: isSelected ? 22 : 18)),
+                        const SizedBox(height: 2),
+                        FittedBox(
+                          child: Text(
+                            e.value.$2,
+                            style: GoogleFonts.quicksand(
+                              fontWeight: FontWeight.w600,
+                              fontSize: 11,
+                              color: isSelected
+                                  ? Colors.white
+                                  : const Color(0xFF636E72),
+                            ),
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               );
@@ -132,8 +136,8 @@ class _DashboardTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<AppState>(
-      builder: (_, state, __) {
+    return GetBuilder<AppController>(
+      builder: (state) {
         final user = state.currentUser;
         if (user == null) return const SizedBox();
 
@@ -177,6 +181,12 @@ class _DashboardTab extends StatelessWidget {
                       TokenBadge(tokens: user.tokens),
                       const SizedBox(width: 8),
                       StreakBadge(streak: user.streak),
+                      const SizedBox(width: 8),
+                      IconButton(
+                        onPressed: () => state.logout(),
+                        icon: const Icon(Icons.logout, color: AppTheme.watermelonRed, size: 24),
+                        tooltip: 'Logout',
+                      ),
                     ],
                   ),
                   const SizedBox(height: 24),
@@ -226,26 +236,29 @@ class _DashboardTab extends StatelessWidget {
                               ),
                               const SizedBox(height: 14),
                               // Progress bar
-                              Stack(
-                                children: [
-                                  Container(
-                                    height: 8,
-                                    width: double.infinity,
-                                    decoration: BoxDecoration(
-                                      color: Colors.white.withOpacity(0.3),
-                                      borderRadius: BorderRadius.circular(4),
-                                    ),
-                                  ),
-                                  Container(
-                                    height: 8,
-                                    width: (MediaQuery.of(context).size.width - 160) *
-                                        (user.tokens / 20).clamp(0.0, 1.0),
-                                    decoration: BoxDecoration(
-                                      color: AppTheme.bananaYellow,
-                                      borderRadius: BorderRadius.circular(4),
-                                    ),
-                                  ),
-                                ],
+                              LayoutBuilder(
+                                builder: (context, constraints) {
+                                  return Stack(
+                                    children: [
+                                      Container(
+                                        height: 8,
+                                        width: constraints.maxWidth,
+                                        decoration: BoxDecoration(
+                                          color: Colors.white.withOpacity(0.3),
+                                          borderRadius: BorderRadius.circular(4),
+                                        ),
+                                      ),
+                                      Container(
+                                        height: 8,
+                                        width: constraints.maxWidth * (user.tokens / 20).clamp(0.0, 1.0),
+                                        decoration: BoxDecoration(
+                                          color: AppTheme.bananaYellow,
+                                          borderRadius: BorderRadius.circular(4),
+                                        ),
+                                      ),
+                                    ],
+                                  );
+                                },
                               ),
                               const SizedBox(height: 6),
                               Text(
@@ -294,10 +307,7 @@ class _DashboardTab extends StatelessWidget {
                     gradientColors: [Color(0xFFFF4757), Color(0xFFFF6B35)],
                     badge: '+3 Tokens',
                     onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (_) => const QuizScreen()),
-                      );
+                      Get.to(() => const QuizScreen());
                     },
                   ),
                   SectionCard(
@@ -307,10 +317,7 @@ class _DashboardTab extends StatelessWidget {
                     gradientColors: [Color(0xFF2ED573), Color(0xFF1ABC9C)],
                     badge: '${user.tokens} tokens',
                     onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (_) => const RewardsScreen()),
-                      );
+                      Get.to(() => const RewardsScreen());
                     },
                   ),
                   SectionCard(
@@ -319,11 +326,7 @@ class _DashboardTab extends StatelessWidget {
                     emoji: '👑',
                     gradientColors: [Color(0xFFFFD32A), Color(0xFFFF9F43)],
                     onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                            builder: (_) => const LeaderboardScreen()),
-                      );
+                      Get.to(() => const LeaderboardScreen());
                     },
                   ),
 

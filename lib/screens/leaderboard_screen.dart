@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:provider/provider.dart';
+import 'package:get/get.dart';
 import 'package:confetti/confetti.dart';
 import '../theme/app_theme.dart';
 import '../utils/app_state.dart';
@@ -35,7 +35,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<AppState>(builder: (_, state, __) {
+    return GetBuilder<AppController>(builder: (state) {
       final board = state.leaderboard;
       final currentUser = state.currentUser;
 

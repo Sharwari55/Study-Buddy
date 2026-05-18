@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:provider/provider.dart';
+import 'package:get/get.dart';
 import 'package:youtube_player_flutter/youtube_player_flutter.dart';
 import '../theme/app_theme.dart';
 import '../utils/app_state.dart';
@@ -16,14 +16,35 @@ class VideoScreen extends StatefulWidget {
 }
 
 class _VideoScreenState extends State<VideoScreen> {
+  List<VideoItem>? _videos;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadVideos();
+  }
+
+  void _loadVideos() async {
+    final state = AppController.to;
+    final user = state.currentUser;
+    if (user != null) {
+      final videos = await state.dbService.getVideos(user.ageGroup);
+      if (mounted) {
+        setState(() {
+          _videos = videos;
+        });
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    final user = context.watch<AppState>().currentUser;
-    if (user == null) return const SizedBox();
+    return GetBuilder<AppController>(
+      builder: (state) {
+        final user = state.currentUser;
+        if (user == null) return const SizedBox();
 
-    final videos = VideoData.getForAge(user.ageGroup);
-
-    return Scaffold(
+        return Scaffold(
       body: Container(
         decoration: const BoxDecoration(gradient: AppTheme.bgGradient),
         child: SafeArea(
@@ -65,41 +86,43 @@ class _VideoScreenState extends State<VideoScreen> {
 
               // Video Grid
               Expanded(
-                child: ListView.builder(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  itemCount: videos.isEmpty ? 1 : videos.length,
-                  itemBuilder: (_, i) {
-                    if (videos.isEmpty) {
-                      return Center(
-                        child: Padding(
-                          padding: const EdgeInsets.all(40),
-                          child: Column(
-                            children: [
-                              const Text('📺', style: TextStyle(fontSize: 50)),
-                              const SizedBox(height: 16),
-                              Text(
-                                'Videos coming soon!\nCheck back later.',
-                                textAlign: TextAlign.center,
-                                style: GoogleFonts.quicksand(
-                                  fontWeight: FontWeight.w600,
-                                  fontSize: 16,
-                                  color: const Color(0xFF636E72),
-                                ),
+                child: _videos == null 
+                    ? const Center(child: CircularProgressIndicator(color: AppTheme.watermelonRed))
+                    : _videos!.isEmpty 
+                        ? Center(
+                            child: Padding(
+                              padding: const EdgeInsets.all(40),
+                              child: Column(
+                                children: [
+                                  const Text('📺', style: TextStyle(fontSize: 50)),
+                                  const SizedBox(height: 16),
+                                  Text(
+                                    'Videos coming soon!\nSeed the database.',
+                                    textAlign: TextAlign.center,
+                                    style: GoogleFonts.quicksand(
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 16,
+                                      color: const Color(0xFF636E72),
+                                    ),
+                                  ),
+                                ],
                               ),
-                            ],
+                            ),
+                          )
+                        : ListView.builder(
+                            padding: const EdgeInsets.symmetric(horizontal: 20),
+                            itemCount: _videos!.length,
+                            itemBuilder: (_, i) {
+                              return _VideoCard(video: _videos![i]);
+                            },
                           ),
-                        ),
-                      );
-                    }
-                    return _VideoCard(video: videos[i]);
-                  },
-                ),
               ),
             ],
           ),
         ),
       ),
     );
+    });
   }
 }
 
@@ -112,12 +135,7 @@ class _VideoCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => _VideoPlayerScreen(video: video),
-          ),
-        );
+        Get.to(() => _VideoPlayerScreen(video: video));
       },
       child: Container(
         margin: const EdgeInsets.only(bottom: 16),
@@ -308,8 +326,14 @@ class _VideoPlayerScreenState extends State<_VideoPlayerScreen> {
         final newTokens = (_watchSeconds / 300).floor();
         if (newTokens > _tokensEarned) {
           _tokensEarned = newTokens;
-          context.read<AppState>().addTokens(1);
+          AppController.to.addTokens(1);
         }
+        
+        // Add 1 watch minute every 60 seconds
+        if (_watchSeconds % 60 == 0) {
+          AppController.to.addWatchMinutes(1);
+        }
+
         // Eye break after 30 min
         if (_continuousMinutes >= 60) {
           _showEyeBreak = true;
@@ -340,7 +364,7 @@ class _VideoPlayerScreenState extends State<_VideoPlayerScreen> {
                   child: Row(
                     children: [
                       GestureDetector(
-                        onTap: () => Navigator.pop(context),
+                        onTap: () => Get.back(),
                         child: Container(
                           padding: const EdgeInsets.all(10),
                           decoration: BoxDecoration(

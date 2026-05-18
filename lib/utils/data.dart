@@ -238,3 +238,18 @@ class VideoData {
     return videos.where((v) => v.ageGroup == ageGroup).toList();
   }
 }
+
+class RewardsData {
+  static const List<RewardModel> rewards = [
+    // Mini Games
+    RewardModel(id: 'r1', emoji: '🧩', name: 'Puzzle World', description: 'Match shapes & colors', cost: 10, category: '🎮 Mini Games'),
+    RewardModel(id: 'r2', emoji: '🔢', name: 'Number Chase', description: 'Count & match numbers', cost: 15, category: '🎮 Mini Games'),
+    RewardModel(id: 'r3', emoji: '🎨', name: 'Art Studio', description: 'Draw & color freely', cost: 20, category: '🎮 Mini Games'),
+    // Fun Cartoons
+    RewardModel(id: 'r4', emoji: '🐘', name: 'Gajapati Kulapati', description: 'Classic Indian kids story', cost: 25, category: '🎬 Fun Cartoons'),
+    RewardModel(id: 'r5', emoji: '🦁', name: 'Jungle Tales', description: 'Panchatantra stories', cost: 30, category: '🎬 Fun Cartoons'),
+    // Special Badges
+    RewardModel(id: 'r6', emoji: '🌟', name: 'Star Scholar', description: 'Show off your learning!', cost: 50, category: '🏆 Special Badges', isSpecial: true),
+    RewardModel(id: 'r7', emoji: '🇮🇳', name: 'Bharat Champion', description: 'India\'s top learner badge', cost: 100, category: '🏆 Special Badges', isSpecial: true),
+  ];
+}

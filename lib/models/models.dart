@@ -9,6 +9,7 @@ class UserProfile {
   int totalWatchMinutes;
   DateTime? lastActiveDate;
   List<String> blockedChannels;
+  List<String> unlockedRewards;
 
   UserProfile({
     required this.id,
@@ -20,6 +21,7 @@ class UserProfile {
     this.totalWatchMinutes = 0,
     this.lastActiveDate,
     this.blockedChannels = const [],
+    this.unlockedRewards = const [],
   });
 
   Map<String, dynamic> toMap() => {
@@ -32,6 +34,7 @@ class UserProfile {
         'totalWatchMinutes': totalWatchMinutes,
         'lastActiveDate': lastActiveDate?.toIso8601String(),
         'blockedChannels': blockedChannels,
+        'unlockedRewards': unlockedRewards,
       };
 
   factory UserProfile.fromMap(Map<String, dynamic> map) => UserProfile(
@@ -46,6 +49,7 @@ class UserProfile {
             ? DateTime.parse(map['lastActiveDate'])
             : null,
         blockedChannels: List<String>.from(map['blockedChannels'] ?? []),
+        unlockedRewards: List<String>.from(map['unlockedRewards'] ?? []),
       );
 }
 
@@ -98,6 +102,16 @@ class QuizQuestion {
     required this.ageGroup,
     this.hint,
   });
+
+  factory QuizQuestion.fromMap(Map<String, dynamic> map) => QuizQuestion(
+    id: map['id'],
+    question: map['question'],
+    options: List<String>.from(map['options']),
+    correctIndex: map['correctIndex'],
+    subject: map['subject'],
+    ageGroup: map['ageGroup'],
+    hint: map['hint'],
+  );
 }
 
 // Leaderboard Entry
@@ -132,4 +146,44 @@ class VideoItem {
     required this.ageGroup,
     required this.subject,
   });
+
+  factory VideoItem.fromMap(Map<String, dynamic> map) => VideoItem(
+    videoId: map['videoId'],
+    title: map['title'],
+    channelName: map['channelName'],
+    thumbnail: map['thumbnail'],
+    ageGroup: map['ageGroup'],
+    subject: map['subject'],
+  );
+}
+
+// Reward Item
+class RewardModel {
+  final String id;
+  final String emoji;
+  final String name;
+  final String description;
+  final int cost;
+  final String category; // 'Mini Games', 'Fun Cartoons', 'Special Badges'
+  final bool isSpecial;
+
+  const RewardModel({
+    required this.id,
+    required this.emoji,
+    required this.name,
+    required this.description,
+    required this.cost,
+    required this.category,
+    this.isSpecial = false,
+  });
+
+  factory RewardModel.fromMap(Map<String, dynamic> map) => RewardModel(
+    id: map['id'],
+    emoji: map['emoji'],
+    name: map['name'],
+    description: map['description'],
+    cost: map['cost'],
+    category: map['category'],
+    isSpecial: map['isSpecial'] ?? false,
+  );
 }
