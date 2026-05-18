@@ -34,6 +34,7 @@ class _SplashScreenState extends State<SplashScreen>
     );
     _controller.forward();
     _navigate();
+    
   }
 
   Future<void> _navigate() async {
