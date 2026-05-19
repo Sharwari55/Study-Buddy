@@ -258,8 +258,9 @@ class _NumberChaseScreenState extends State<NumberChaseScreen> {
                       child: Center(
                         child: Text(
                           '$number',
-                          style: GoogleFonts.fredokaOne(
+                          style: GoogleFonts.quicksand(
                             fontSize: 28,
+                            fontWeight: FontWeight.w900,
                             color: isFound ? Colors.grey.shade500 : Colors.white,
                           ),
                         ),
