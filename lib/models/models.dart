@@ -20,9 +20,10 @@ class UserProfile {
     this.streak = 0,
     this.totalWatchMinutes = 0,
     this.lastActiveDate,
-    this.blockedChannels = const [],
-    this.unlockedRewards = const [],
-  });
+    List<String>? blockedChannels,
+    List<String>? unlockedRewards,
+  })  : blockedChannels = blockedChannels ?? [],
+        unlockedRewards = unlockedRewards ?? [];
 
   Map<String, dynamic> toMap() => {
         'id': id,

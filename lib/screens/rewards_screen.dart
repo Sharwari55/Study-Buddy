@@ -5,6 +5,9 @@ import '../theme/app_theme.dart';
 import '../utils/app_state.dart';
 import '../models/models.dart';
 import '../widgets/widgets.dart';
+import 'puzzle_game_screen.dart';
+import 'number_chase_screen.dart';
+import 'art_studio_screen.dart';
 
 class RewardsScreen extends StatefulWidget {
   const RewardsScreen({super.key});
@@ -152,6 +155,26 @@ class _RewardsScreenState extends State<RewardsScreen> {
   void _unlockReward(BuildContext context, AppController state, RewardModel reward) async {
     if (state.currentUser!.unlockedRewards.contains(reward.id)) {
       // Already unlocked, just use it
+      if (reward.id == 'r1') {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const PuzzleGameScreen()),
+        );
+        return;
+      } else if (reward.id == 'r2') {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const NumberChaseScreen()),
+        );
+        return;
+      } else if (reward.id == 'r3') {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const ArtStudioScreen()),
+        );
+        return;
+      }
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Using ${reward.name}!', style: GoogleFonts.quicksand(fontWeight: FontWeight.w600)),
